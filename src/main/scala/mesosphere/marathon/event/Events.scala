@@ -83,3 +83,22 @@ case class Unsubscribe(
     callbackUrl: String,
     override val eventType: String = "unsubscribe_event")
   extends MarathonSubscriptionEvent
+
+sealed trait MarathonHealthCheckEvent extends MarathonEvent{
+  def callbackUrl: String
+  override def eventType = "marathon_health_check_event"
+}
+
+case class AddHealthCheck(
+    callbackUrl: String, // change to "url"
+    // type: String,
+    // acceptableStatusCodes: List[Int],
+    // timeoutSeconds: Int,
+    // frequencySeconds: Int
+    override val eventType: String = "add_health_check_event")
+  extends MarathonHealthCheckEvent
+
+case class RemoveHealthCheck(
+    callbackUrl: String,
+    override val eventType: String = "remove_health_check_event")
+  extends MarathonHealthCheckEvent

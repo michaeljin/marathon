@@ -72,6 +72,31 @@ class HttpEventModule extends AbstractModule {
   }
 
   @Provides
+  @Named(HttpEventModule.HealthCheckKeeperActor)
+  def provideHealthCheckKeeperActor(system: ActorSystem,
+    // this needs to be MarathonStore[HealthCheckSubscriber]
+                                    store: MarathonStore[EventSubscribers]): ActorRef = {
+    implicit val timeout = HttpEventModule.timeout
+    implicit val ec = HttpEventModule.executionContext
+    val local_ip = java.net.InetAddress.getLocalHost().getHostAddress()
+
+    val actor = system.actorOf(Props(new HealthCheckKeeperActor(store)))
+    Main.conf.httpEventEndpoints.get map {
+      urls =>
+        log.info(s"http_endpoints(${urls}) are specified at startup. Those will be added to subscribers list.")
+        urls.foreach{ url =>
+          val f = (actor ? Subscribe(local_ip, url)).mapTo[MarathonSubscriptionEvent]
+          f.onFailure {
+            case th: Throwable =>
+              log.warning(s"Failed to add ${url} to event subscribers. exception message => ${th.getMessage}")
+          }
+        }
+    }
+
+    actor
+  }
+
+  @Provides
   @Singleton
   def provideCallbackUrlsStore(state: State): MarathonStore[EventSubscribers] = {
     new MarathonStore[EventSubscribers](state, () => new EventSubscribers(Set.empty[String]), "events:")
@@ -93,6 +118,7 @@ class HttpEventModule extends AbstractModule {
 object HttpEventModule {
   final val StatusUpdateActor = "EventsActor"
   final val SubscribersKeeperActor = "SubscriberKeeperActor"
+  final val HealthCheckKeeperActor = "HealthCheckKeeperActor"
 
   val executorService = Executors.newCachedThreadPool()
   val executionContext = ExecutionContext.fromExecutorService(executorService)

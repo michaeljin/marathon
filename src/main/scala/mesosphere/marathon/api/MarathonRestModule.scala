@@ -31,6 +31,7 @@ class MarathonRestModule extends RestModule {
     bind(classOf[v2.AppsResource]).in(Scopes.SINGLETON)
     bind(classOf[v2.TasksResource]).in(Scopes.SINGLETON)
     bind(classOf[v2.EventSubscriptionsResource]).in(Scopes.SINGLETON)
+    bind(classOf[v2.HealthCheckResource]).in(Scopes.SINGLETON)
 
     // This filter will redirect to the master if running in HA mode.
     bind(classOf[LeaderProxyFilter]).asEagerSingleton()
